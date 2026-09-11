@@ -91,6 +91,10 @@ func (e *Engine) apply(reason string) (model.State, error) {
 		e.restoreRules(cfg, previous)
 		return model.State{}, fmt.Errorf("activate routing rules: %w", err)
 	}
+	if err := e.configureDNS(cfg, previous.DNSManaged); err != nil {
+		e.restoreRules(cfg, previous)
+		return model.State{}, fmt.Errorf("configure DNS: %w", err)
+	}
 
 	state := previous
 	state.SchemaVersion = model.SchemaVersion
@@ -98,9 +102,13 @@ func (e *Engine) apply(reason string) (model.State, error) {
 	state.ActiveTable = plan.TargetTable
 	state.Generation++
 	state.DataSHA256 = hashCIDRs(cidrs)
+	state.DNSManaged = cfg.DNS.Mode == "managed"
 	state.LastAppliedAt = time.Now().UTC()
 	state.LastSnapshot = snapshot
 	if err := e.Store.SaveState(state); err != nil {
+		if !previous.DNSManaged {
+			e.restoreSystemDNS(cfg)
+		}
 		e.restoreRules(cfg, previous)
 		return model.State{}, fmt.Errorf("save state after routing change: %w", err)
 	}
@@ -134,6 +142,14 @@ func (e *Engine) disable(reason string) (model.State, error) {
 		e.deletePriority(cfg.Routing.MainRulePriority)
 	}
 	var cleanupProblems []string
+	dnsRestored := !previous.DNSManaged
+	if previous.DNSManaged {
+		if err := e.restoreSystemDNS(cfg); err != nil {
+			cleanupProblems = append(cleanupProblems, fmt.Sprintf("restore system DNS: %v", err))
+		} else {
+			dnsRestored = true
+		}
+	}
 	for _, table := range []int{cfg.Routing.LocalTable, cfg.Routing.TableA, cfg.Routing.TableB} {
 		if err := e.flushTable(table); err != nil {
 			cleanupProblems = append(cleanupProblems, fmt.Sprintf("flush routing table %d: %v", table, err))
@@ -142,6 +158,7 @@ func (e *Engine) disable(reason string) (model.State, error) {
 	state := previous
 	state.Enabled = false
 	state.ActiveTable = 0
+	state.DNSManaged = !dnsRestored
 	state.Generation++
 	state.LastAppliedAt = time.Now().UTC()
 	state.LastSnapshot = snapshot
@@ -265,6 +282,13 @@ func (e *Engine) Doctor() []Check {
 				checks = append(checks, Check{Name: name + " identity", OK: ok, Message: message})
 			}
 		}
+		if cfg.DNS.Mode == "managed" {
+			err := e.Runner.LookPath("resolvectl")
+			if err == nil {
+				_, err = e.Runner.Run("resolvectl", "status")
+			}
+			checks = append(checks, Check{Name: "managed DNS", OK: err == nil, Message: checkMessage(err, "systemd-resolved is available")})
+		}
 	}
 	return checks
 }
@@ -348,6 +372,63 @@ func (e *Engine) preflightNetwork(cfg model.Config) error {
 				return fmt.Errorf("%s interface MAC changed: expected %s, found %s", name, link.MAC, actual)
 			}
 		}
+	}
+	if cfg.DNS.Mode == "managed" {
+		if err := e.Runner.LookPath("resolvectl"); err != nil {
+			return errors.New("managed DNS requires systemd-resolved and the resolvectl command")
+		}
+		if _, err := e.Runner.Run("resolvectl", "status"); err != nil {
+			return fmt.Errorf("managed DNS requires a running systemd-resolved service: %w", err)
+		}
+	}
+	return nil
+}
+
+func (e *Engine) configureDNS(cfg model.Config, wasManaged bool) error {
+	if cfg.DNS.Mode == "system" {
+		if wasManaged {
+			return e.restoreSystemDNS(cfg)
+		}
+		return nil
+	}
+	commands := [][]string{
+		append([]string{"dns", cfg.International.Interface}, cfg.DNS.International...),
+		{"domain", cfg.International.Interface, "~."},
+		{"default-route", cfg.International.Interface, "yes"},
+		{"default-route", cfg.Local.Interface, "no"},
+		{"flush-caches"},
+	}
+	for _, args := range commands {
+		if _, err := e.Runner.Run("resolvectl", args...); err != nil {
+			if !wasManaged {
+				_ = e.restoreSystemDNS(cfg)
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *Engine) restoreSystemDNS(cfg model.Config) error {
+	if err := e.Runner.LookPath("resolvectl"); err != nil {
+		return errors.New("resolvectl is required to restore system DNS")
+	}
+	var problems []string
+	seen := make(map[string]bool)
+	for _, interfaceName := range []string{cfg.Local.Interface, cfg.International.Interface} {
+		if interfaceName == "" || seen[interfaceName] {
+			continue
+		}
+		seen[interfaceName] = true
+		if _, err := e.Runner.Run("resolvectl", "revert", interfaceName); err != nil {
+			problems = append(problems, err.Error())
+		}
+	}
+	if _, err := e.Runner.Run("resolvectl", "flush-caches"); err != nil {
+		problems = append(problems, err.Error())
+	}
+	if len(problems) > 0 {
+		return errors.New(strings.Join(problems, "; "))
 	}
 	return nil
 }

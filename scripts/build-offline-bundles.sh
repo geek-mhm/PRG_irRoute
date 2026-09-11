@@ -3,7 +3,7 @@ set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 project_dir=$(dirname "$script_dir")
-version=${VERSION:-0.1.1}
+version=${VERSION:-0.1.2}
 build_dir=$(mktemp -d)
 trap 'rm -rf "$build_dir"' EXIT HUP INT TERM
 
@@ -37,7 +37,7 @@ for architecture in amd64 arm64; do
     cp LICENSE "$package_dir/LICENSE"
     chmod 0755 "$package_dir/install.sh" "$package_dir/irroute"
 
-    tar -C "$build_dir" -czf "dist/$package_name.tar.gz" "$package_name"
+    COPYFILE_DISABLE=1 tar --no-xattrs -C "$build_dir" -czf "dist/$package_name.tar.gz" "$package_name"
 done
 
 if command -v sha256sum >/dev/null 2>&1; then

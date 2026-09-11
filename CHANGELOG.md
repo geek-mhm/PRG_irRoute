@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.1 - Unreleased
+## 0.1.2 - 2026-09-12
+
+- Added managed DNS profiles using `systemd-resolved`.
+- Added setup wizard and CLI controls for international DNS servers.
+- Added DNS restoration on disable and rollback.
+
+## 0.1.1 - 2026-09-12
 
 - Fixed managed rule priorities so irroute policy runs before Linux's standard main-table rule.
 - Added a main-table non-default lookup to preserve Docker, LAN, VPN, and static routes.

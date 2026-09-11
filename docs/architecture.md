@@ -43,6 +43,12 @@ When table A is active, the next route generation is built in table B. When tabl
 
 A route-loading error leaves the previous active table and rule unchanged. A rule-switch or state-write error triggers a best-effort restoration of the previous managed rules.
 
+## DNS policy
+
+Managed DNS uses `systemd-resolved` through `resolvectl`. The configured DNS servers and the route-only `~.` domain are assigned to the international interface. That interface becomes the DNS default route, while the local interface is excluded from default DNS selection. This prevents a resolver inherited on the public local link from bypassing the international path.
+
+The original network-provided per-link DNS configuration is not overwritten on disk. `irroute disable`, a safety rollback, or switching to system DNS calls `resolvectl revert` for both managed interfaces and flushes the resolver cache. The systemd boot service reapplies managed DNS after the network is online.
+
 ## Connectivity confirmation
 
 For an interactive apply, the CLI creates a transient systemd timer before asking for confirmation. The timer invokes the installed irroute binary with the pre-change snapshot. This timer runs independently from the SSH session. A lost session therefore does not prevent rollback.

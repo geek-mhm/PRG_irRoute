@@ -1,4 +1,4 @@
-VERSION ?= 0.1.1-dev
+VERSION ?= 0.1.2-dev
 BINARY := bin/irroute
 
 .PHONY: build test vet check clean install offline-bundles

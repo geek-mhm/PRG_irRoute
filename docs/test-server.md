@@ -52,7 +52,7 @@ Custom files must contain one IPv4 address or CIDR per line. Blank lines and com
 sudo irroute setup
 ```
 
-Select the public Iran interface as `local`. Select the unfiltered path as `international`. Enter each interface address in CIDR notation and its directly reachable gateway. Press Enter at the data-source prompt to use the bundled seed, or enter `/root/iran-ipv4.cidr` if you copied a custom file.
+Select the public Iran interface as `local`. Select the unfiltered path as `international`. Enter each interface address in CIDR notation and its directly reachable gateway. Select managed DNS to send resolver traffic through the international interface. Press Enter to accept the default DNS servers. Press Enter at the data-source prompt to use the bundled seed, or enter `/root/iran-ipv4.cidr` if you copied a custom file.
 
 ## 5. Validate the generated policy
 
@@ -88,7 +88,8 @@ The rollback timer is scheduled before any route changes. After activation:
 
 1. confirm both SSH sessions are responsive;
 2. verify local and international egress from the second session;
-3. return to the first session and type `CONFIRM` exactly as shown.
+3. verify DNS resolution with `getent ahostsv4 api.ipify.org`;
+4. return to the first session and type `CONFIRM` exactly as shown.
 
 If connectivity is lost or confirmation is not entered, systemd restores the pre-change snapshot after 120 seconds.
 

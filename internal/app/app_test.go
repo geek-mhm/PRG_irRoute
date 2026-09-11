@@ -36,6 +36,8 @@ func TestManualSetupAndForceRoute(t *testing.T) {
 		"ens224",
 		"192.168.10.11/24",
 		"192.168.10.1",
+		"managed",
+		"1.1.1.1,8.8.8.8",
 		source,
 	}, "\n") + "\n"
 	var output bytes.Buffer

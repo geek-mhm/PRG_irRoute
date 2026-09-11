@@ -2,7 +2,7 @@
 
 `irroute` is an Ubuntu-first policy-routing manager for hosts with separate local and international internet paths. It sends Iran destination networks through the local public interface and sends all other host-generated traffic through the international interface.
 
-Phase one provides a safe, testable routing core and an English-only SSH interface. It replaces ad-hoc boot scripts with versioned configuration, validated CIDR data, isolated routing tables, A/B route activation, snapshots, diagnostics, and rollback.
+The application provides a safe, testable routing core and an English-only SSH interface. It replaces ad-hoc boot scripts with versioned configuration, validated CIDR data, isolated routing tables, A/B route activation, managed DNS, snapshots, diagnostics, and rollback.
 
 ## Safety model
 
@@ -14,16 +14,18 @@ Phase one provides a safe, testable routing core and an English-only SSH interfa
 - Interactive activation schedules an independent systemd rollback. The operator must type `CONFIRM` within 90 seconds or the previous snapshot is restored after 120 seconds.
 - Existing rules at irroute priorities are treated as conflicts during first activation and are never silently overwritten.
 - Interface MAC addresses can be pinned by the setup wizard to detect unexpected interface identity changes.
+- Managed DNS assigns a route-only default domain to the international interface and restores network-provided DNS settings on disable or rollback.
 
 ## Requirements
 
 - Ubuntu 22.04 or 24.04
 - Two already-configured IPv4 interfaces
 - `iproute2`
+- `systemd-resolved` when managed DNS is enabled
 - Root privileges for route changes
 - Go 1.18 or newer when installing from source
 
-Phase one manages host-generated IPv4 traffic only. Forwarded client traffic, IPv6, automated gateway health failover, application updates, and split DNS policy are planned for later phases.
+The current release manages host-generated IPv4 traffic only. Forwarded client traffic, IPv6, automated gateway health failover, and application updates are planned for later phases.
 
 The repository includes a validated Iran IPv4 seed under `data/`. Offline release bundles include this seed automatically, so a separate CIDR download is not required for the first installation.
 
@@ -50,7 +52,7 @@ sudo irroute plan
 sudo irroute enable
 ```
 
-The setup wizard asks which interface is local, which interface is international, their addresses and gateways, and the Iran CIDR source path. Review the plan before activation.
+The setup wizard asks which interface is local, which interface is international, their addresses and gateways, whether irroute should manage DNS, and the Iran CIDR source path. Managed DNS defaults to `1.1.1.1` and `8.8.8.8` through the international interface. Review the plan before activation.
 
 After `enable` changes the active route table, verify the current SSH session and both egress paths, then type `CONFIRM`. For unattended deployment only, `--no-confirm` disables this protection:
 
@@ -94,6 +96,14 @@ Import a replacement Iran CIDR file:
 sudo irroute data import /path/to/iran-ipv4.cidr
 ```
 
+Show or change DNS policy:
+
+```sh
+sudo irroute dns show
+sudo irroute dns set 1.1.1.1 8.8.8.8
+sudo irroute dns system
+```
+
 If routing is enabled, force-route and data changes create a new A/B generation and require connectivity confirmation.
 
 Disable only the routes and rules managed by irroute:
@@ -135,7 +145,7 @@ Use `IRROUTE_ROOT` to redirect application files into a temporary root during de
 IRROUTE_ROOT=/tmp/irroute-test ./bin/irroute setup
 ```
 
-See [docs/architecture.md](docs/architecture.md) for routing behavior and [docs/roadmap.md](docs/roadmap.md) for the planned update, DNS, and health-management phases.
+See [docs/architecture.md](docs/architecture.md) for routing and DNS behavior and [docs/roadmap.md](docs/roadmap.md) for planned update and health-management phases.
 
 For a complete clean-server test procedure, see [docs/test-server.md](docs/test-server.md).
 

@@ -10,6 +10,7 @@
 - Dedicated route ownership and A/B activation
 - Enable, disable, plan, status, diagnostics, snapshots, and rollback
 - systemd boot persistence and connectivity-confirmed changes
+- Managed per-link DNS using `systemd-resolved`, with disable and rollback restoration
 - Unit tests and source installer
 
 ## Phase two: controlled updates and DNS
@@ -19,8 +20,6 @@
 - Separate application and Iran-data versions
 - Download verification, staged installation, and rollback
 - Scheduled data refresh with change preview
-- DNS profiles using `systemd-resolved`
-- Per-link DNS servers, route-only domains, validation, and restore
 
 ## Phase three: health and recovery
 

@@ -46,6 +46,18 @@ func Validate(cfg model.Config) error {
 	if cfg.Routing.MainRulePriority >= 32766 {
 		problems = append(problems, "managed rule priorities must precede the system main rule at priority 32766")
 	}
+	if cfg.DNS.Mode != "system" && cfg.DNS.Mode != "managed" {
+		problems = append(problems, "DNS mode must be system or managed")
+	}
+	if cfg.DNS.Mode == "managed" && len(cfg.DNS.International) == 0 {
+		problems = append(problems, "managed DNS requires at least one international DNS server")
+	}
+	for _, server := range append(append([]string{}, cfg.DNS.Local...), cfg.DNS.International...) {
+		address, err := netip.ParseAddr(server)
+		if err != nil || !address.Is4() {
+			problems = append(problems, fmt.Sprintf("DNS server %q must be a valid IPv4 address", server))
+		}
+	}
 	for _, entry := range append(append([]model.RouteEntry{}, cfg.Routing.ForceLocal...), cfg.Routing.ForceInternational...) {
 		if _, err := parseIPv4Prefix(entry.CIDR); err != nil {
 			problems = append(problems, fmt.Sprintf("invalid force route %q: %v", entry.CIDR, err))

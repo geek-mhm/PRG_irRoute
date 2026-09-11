@@ -54,6 +54,18 @@ func TestValidateRejectsRulesAfterSystemMain(t *testing.T) {
 	}
 }
 
+func TestValidateManagedDNS(t *testing.T) {
+	cfg := validConfig()
+	cfg.DNS.International = nil
+	if err := Validate(cfg); err == nil || !strings.Contains(err.Error(), "at least one international DNS server") {
+		t.Fatalf("Validate() error = %v, want missing DNS server error", err)
+	}
+	cfg.DNS.International = []string{"not-an-address"}
+	if err := Validate(cfg); err == nil || !strings.Contains(err.Error(), "valid IPv4 address") {
+		t.Fatalf("Validate() error = %v, want invalid DNS address error", err)
+	}
+}
+
 func validConfig() model.Config {
 	cfg := model.DefaultConfig()
 	cfg.Local = model.Link{Interface: "ens192", Address: "198.51.100.10/24", Gateway: "198.51.100.1"}

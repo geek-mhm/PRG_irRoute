@@ -71,6 +71,9 @@ func TestApplyAlternatesTablesAndDisableRemovesState(t *testing.T) {
 		"rule add priority 10000 from all table main suppress_prefixlength 0",
 		"rule add priority 10010 from 198.51.100.10/32 table 51810",
 		"rule add priority 10020 from all table 51820",
+		"resolvectl dns ens224 1.1.1.1 8.8.8.8",
+		"resolvectl domain ens224 ~.",
+		"resolvectl default-route ens192 no",
 	} {
 		if !strings.Contains(commands, expected) {
 			t.Errorf("managed rule command %q was not executed\n%s", expected, commands)
@@ -85,6 +88,10 @@ func TestApplyAlternatesTablesAndDisableRemovesState(t *testing.T) {
 	}
 	if disabled.Enabled || disabled.ActiveTable != 0 || disabled.Generation != 3 {
 		t.Fatalf("unexpected disabled state: %+v", disabled)
+	}
+	commands = strings.Join(runner.commands, "\n")
+	if !strings.Contains(commands, "resolvectl revert ens192") || !strings.Contains(commands, "resolvectl revert ens224") {
+		t.Fatalf("disable did not restore per-link DNS settings:\n%s", commands)
 	}
 }
 

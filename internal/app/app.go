@@ -63,6 +63,8 @@ func (a *App) Run(args []string) error {
 		return a.disable()
 	case "force":
 		return a.force(args[1:])
+	case "dns":
+		return a.dns(args[1:])
 	case "data":
 		return a.data(args[1:])
 	case "rollback":
@@ -98,9 +100,10 @@ func (a *App) menu() error {
 		fmt.Fprintln(a.Out, "4) Disable")
 		fmt.Fprintln(a.Out, "5) Show plan")
 		fmt.Fprintln(a.Out, "6) Manage force routes")
-		fmt.Fprintln(a.Out, "7) Import Iran CIDR data")
-		fmt.Fprintln(a.Out, "8) Run diagnostics")
-		fmt.Fprintln(a.Out, "9) Roll back latest change")
+		fmt.Fprintln(a.Out, "7) Manage DNS")
+		fmt.Fprintln(a.Out, "8) Import Iran CIDR data")
+		fmt.Fprintln(a.Out, "9) Run diagnostics")
+		fmt.Fprintln(a.Out, "10) Roll back latest change")
 		fmt.Fprintln(a.Out, "0) Exit")
 		choice, err := prompt(reader, a.Out, "Select an option", "")
 		if err != nil {
@@ -136,6 +139,10 @@ func (a *App) menu() error {
 				fmt.Fprintf(a.Err, "Error: %v\n", err)
 			}
 		case "7":
+			if err := a.dnsMenu(reader); err != nil {
+				fmt.Fprintf(a.Err, "Error: %v\n", err)
+			}
+		case "8":
 			path, err := prompt(reader, a.Out, "CIDR file path", "")
 			if err == nil && path != "" {
 				err = a.importData(path)
@@ -143,9 +150,9 @@ func (a *App) menu() error {
 			if err != nil {
 				fmt.Fprintf(a.Err, "Error: %v\n", err)
 			}
-		case "8":
-			_ = a.doctor()
 		case "9":
+			_ = a.doctor()
+		case "10":
 			if confirm(reader, a.Out, "Restore the latest snapshot?", false) {
 				state, err := a.Engine.Rollback("latest")
 				if err != nil {
@@ -225,8 +232,30 @@ func (a *App) setupWithReader(reader *bufio.Reader) error {
 
 	cfg.Routing.FailurePolicy = "manual"
 	fmt.Fprintln(a.Out, "Failure policy: manual (phase one)")
-	cfg.DNS.Mode = "system"
-	fmt.Fprintln(a.Out, "DNS mode: system (phase one)")
+	dnsDefault := cfg.DNS.Mode
+	if dnsDefault == "" {
+		dnsDefault = "managed"
+	}
+	dnsMode, err := prompt(reader, a.Out, "DNS mode (managed or system)", dnsDefault)
+	if err != nil {
+		return err
+	}
+	cfg.DNS.Mode = strings.ToLower(strings.TrimSpace(dnsMode))
+	if cfg.DNS.Mode == "managed" {
+		serversDefault := strings.Join(cfg.DNS.International, ",")
+		if serversDefault == "" {
+			serversDefault = "1.1.1.1,8.8.8.8"
+		}
+		servers, err := prompt(reader, a.Out, "International DNS servers (comma-separated IPv4 addresses)", serversDefault)
+		if err != nil {
+			return err
+		}
+		cfg.DNS.International = splitCommaList(servers)
+		cfg.DNS.Local = nil
+	} else if cfg.DNS.Mode == "system" {
+		cfg.DNS.Local = nil
+		cfg.DNS.International = nil
+	}
 	if err := config.Validate(cfg); err != nil {
 		return fmt.Errorf("setup answers are invalid: %w", err)
 	}
@@ -283,6 +312,7 @@ func (a *App) status() error {
 	fmt.Fprintf(a.Out, "Status: %s\n", status)
 	fmt.Fprintf(a.Out, "Active table: %d\n", state.ActiveTable)
 	fmt.Fprintf(a.Out, "Generation: %d\n", state.Generation)
+	fmt.Fprintf(a.Out, "Managed DNS active: %t\n", state.DNSManaged)
 	if !state.LastAppliedAt.IsZero() {
 		fmt.Fprintf(a.Out, "Last applied: %s\n", state.LastAppliedAt.Format("2006-01-02 15:04:05Z"))
 	}
@@ -469,6 +499,60 @@ func (a *App) forceMenu(reader *bufio.Reader) error {
 	return a.force(args)
 }
 
+func (a *App) dns(args []string) error {
+	cfg, err := a.Store.LoadConfig()
+	if err != nil {
+		return err
+	}
+	if len(args) == 0 || args[0] == "show" {
+		fmt.Fprintf(a.Out, "DNS mode: %s\n", cfg.DNS.Mode)
+		if len(cfg.DNS.International) > 0 {
+			fmt.Fprintf(a.Out, "International DNS servers: %s\n", strings.Join(cfg.DNS.International, ", "))
+		}
+		return nil
+	}
+	oldConfig := cloneConfig(cfg)
+	switch args[0] {
+	case "set":
+		if len(args) < 2 {
+			return errors.New("usage: irroute dns set <IPv4> [IPv4 ...]")
+		}
+		cfg.DNS.Mode = "managed"
+		cfg.DNS.Local = nil
+		cfg.DNS.International = append([]string(nil), args[1:]...)
+	case "system":
+		cfg.DNS.Mode = "system"
+		cfg.DNS.Local = nil
+		cfg.DNS.International = nil
+	default:
+		return errors.New("usage: irroute dns <show|set|system>")
+	}
+	if err := config.Validate(cfg); err != nil {
+		return err
+	}
+	if err := a.saveAndMaybeApply(oldConfig, cfg, "DNS configuration change"); err != nil {
+		return err
+	}
+	fmt.Fprintf(a.Out, "DNS mode changed to %s.\n", cfg.DNS.Mode)
+	return nil
+}
+
+func (a *App) dnsMenu(reader *bufio.Reader) error {
+	action, err := prompt(reader, a.Out, "DNS action (show, set, or system)", "show")
+	if err != nil {
+		return err
+	}
+	args := []string{action}
+	if action == "set" {
+		servers, err := prompt(reader, a.Out, "International DNS servers (comma-separated IPv4 addresses)", "1.1.1.1,8.8.8.8")
+		if err != nil {
+			return err
+		}
+		args = append(args, splitCommaList(servers)...)
+	}
+	return a.dns(args)
+}
+
 func (a *App) data(args []string) error {
 	if len(args) == 2 && args[0] == "import" {
 		return a.importData(args[1])
@@ -645,11 +729,11 @@ func (a *App) setServiceEnabled(enabled bool) error {
 	if !a.Runner.IsLinux() || a.Store.Paths.Root != "/" || a.Runner.LookPath("systemctl") != nil {
 		return nil
 	}
-	action := "disable"
+	args := []string{"disable", "--now", "irroute.service"}
 	if enabled {
-		action = "enable"
+		args = []string{"enable", "irroute.service"}
 	}
-	if _, err := a.Runner.Run("systemctl", action, "irroute.service"); err != nil {
+	if _, err := a.Runner.Run("systemctl", args...); err != nil {
 		return err
 	}
 	return nil
@@ -669,6 +753,9 @@ Commands:
   force <local|international> add <CIDR>      Add or update a force route
   force <local|international> remove <CIDR>   Remove a force route
   force <local|international> list            List force routes
+  dns show                                    Show DNS policy
+  dns set <IPv4> [IPv4 ...]                   Route DNS through the international interface
+  dns system                                  Return DNS control to the system network configuration
   data import <file>                          Import and validate Iran CIDR data
   rollback [latest|snapshot]                  Restore a safety snapshot
   version                                     Show the version
@@ -794,6 +881,17 @@ func pastTense(action string) string {
 		return "added"
 	}
 	return "removed"
+}
+
+func splitCommaList(value string) []string {
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if item := strings.TrimSpace(part); item != "" {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 func cloneConfig(cfg model.Config) model.Config {

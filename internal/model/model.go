@@ -56,6 +56,7 @@ type State struct {
 	ActiveTable   int       `json:"active_table,omitempty"`
 	Generation    uint64    `json:"generation"`
 	DataSHA256    string    `json:"data_sha256,omitempty"`
+	DNSManaged    bool      `json:"dns_managed,omitempty"`
 	LastAppliedAt time.Time `json:"last_applied_at,omitempty"`
 	LastSnapshot  string    `json:"last_snapshot,omitempty"`
 }
@@ -83,7 +84,10 @@ func DefaultConfig() Config {
 			SourceRulePriority: 10010,
 			MainRulePriority:   10020,
 		},
-		DNS:     DNSConfig{Mode: "system"},
+		DNS: DNSConfig{
+			Mode:          "managed",
+			International: []string{"1.1.1.1", "8.8.8.8"},
+		},
 		Updates: UpdateConfig{Channel: "stable"},
 	}
 }
