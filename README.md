@@ -24,6 +24,8 @@ Phase one provides a safe, testable routing core and an English-only SSH interfa
 
 Phase one manages host-generated IPv4 traffic only. Forwarded client traffic, IPv6, automated gateway health failover, application updates, and split DNS policy are planned for later phases.
 
+The repository includes a validated Iran IPv4 seed under `data/`. Offline release bundles include this seed automatically, so a separate CIDR download is not required for the first installation.
+
 ## Install from source on Ubuntu
 
 ```sh
@@ -38,7 +40,7 @@ The installer installs missing build dependencies through `apt-get`, runs the te
 
 ## First setup
 
-Prepare a text file containing one Iran IPv4 CIDR per line. Blank lines and comments beginning with `#` are accepted.
+The installer imports the bundled Iran IPv4 seed automatically on a new server. The setup wizard offers that file as its default, so press Enter to keep it. You may instead provide a custom file containing one IPv4 CIDR per line.
 
 ```sh
 sudo irroute setup
@@ -135,3 +137,5 @@ IRROUTE_ROOT=/tmp/irroute-test ./bin/irroute setup
 See [docs/architecture.md](docs/architecture.md) for routing behavior and [docs/roadmap.md](docs/roadmap.md) for the planned update, DNS, and health-management phases.
 
 For a complete clean-server test procedure, see [docs/test-server.md](docs/test-server.md).
+
+For servers without international internet access, see [docs/offline-install.md](docs/offline-install.md). The offline bundle requires no Git client, Go compiler, or package download on the target server.

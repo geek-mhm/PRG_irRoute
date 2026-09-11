@@ -9,3 +9,5 @@
 - Added diagnostics, status, snapshots, rollback, and connectivity confirmation.
 - Added systemd persistence, source installation, and unit tests.
 - Added dependency installation and a clean Ubuntu server test procedure.
+- Added bundled Iran IPv4 seed data with documented provenance.
+- Added dependency-free offline bundles for Linux amd64 and arm64 servers.

@@ -1,0 +1,36 @@
+name: Release offline bundles
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build and test offline bundles
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}" make offline-bundles
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/irroute-*.tar.gz \
+            dist/SHA256SUMS \
+            --verify-tag \
+            --generate-notes \
+            --title "irroute ${GITHUB_REF_NAME#v}"

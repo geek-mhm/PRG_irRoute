@@ -54,6 +54,13 @@ install -D -m 0755 "$build_dir/irroute" /usr/local/sbin/irroute
 install -D -m 0644 packaging/irroute.service /etc/systemd/system/irroute.service
 install -d -m 0700 /etc/irroute /var/lib/irroute/data /var/lib/irroute/backups /run/irroute
 
+if [ ! -f /var/lib/irroute/data/iran-current.cidr ]; then
+    /usr/local/sbin/irroute data import "$project_dir/data/iran-ipv4.cidr"
+    echo "Bundled Iran IPv4 seed data was imported."
+else
+    echo "Existing Iran IPv4 data was preserved."
+fi
+
 systemctl daemon-reload
 
 echo "irroute 0.1.0 was installed successfully."

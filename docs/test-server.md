@@ -2,6 +2,8 @@
 
 This procedure is intended for a disposable Ubuntu 22.04 or 24.04 server with two already-configured IPv4 interfaces. Keep provider console access available during the first routing test.
 
+If the server cannot reach GitHub or Ubuntu mirrors, follow [offline-install.md](offline-install.md) instead of the source installation steps below.
+
 ## 1. Inspect the server before installation
 
 Record the interface names, addresses, gateways, current default route, and SSH source address:
@@ -34,15 +36,15 @@ sudo irroute version
 systemctl cat irroute.service
 ```
 
-## 3. Provide Iran IPv4 data
+## 3. Review or replace Iran IPv4 data
 
-Copy the validated Iran CIDR file to the test server. For example, run this from the computer that holds the file:
+The installer imports the bundled Iran IPv4 seed on a new server. No separate download is required. To use a custom list instead, copy it to the test server:
 
 ```sh
 scp /path/to/iran-ipv4.cidr root@SERVER_IP:/root/iran-ipv4.cidr
 ```
 
-The file must contain one IPv4 address or CIDR per line. Blank lines and comments starting with `#` are accepted.
+Custom files must contain one IPv4 address or CIDR per line. Blank lines and comments starting with `#` are accepted.
 
 ## 4. Run setup without changing routes
 
@@ -50,7 +52,7 @@ The file must contain one IPv4 address or CIDR per line. Blank lines and comment
 sudo irroute setup
 ```
 
-Select the public Iran interface as `local`. Select the unfiltered path as `international`. Enter each interface address in CIDR notation and its directly reachable gateway. Use `/root/iran-ipv4.cidr` as the data source.
+Select the public Iran interface as `local`. Select the unfiltered path as `international`. Enter each interface address in CIDR notation and its directly reachable gateway. Press Enter at the data-source prompt to use the bundled seed, or enter `/root/iran-ipv4.cidr` if you copied a custom file.
 
 ## 5. Validate the generated policy
 
