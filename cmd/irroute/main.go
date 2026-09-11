@@ -9,7 +9,7 @@ import (
 	sys "irroute/internal/system"
 )
 
-var version = "0.1.0-dev"
+var version = "0.1.1-dev"
 
 func main() {
 	root := os.Getenv("IRROUTE_ROOT")

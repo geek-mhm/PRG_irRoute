@@ -4,10 +4,11 @@
 
 The phase-one host policy is:
 
-1. Traffic sourced from the local public address uses the dedicated local source table. This preserves symmetric replies for connections that entered through the public interface.
-2. All other host-generated IPv4 traffic consults the active irroute A/B table.
-3. Effective Iran destinations use the local gateway.
-4. All remaining destinations use the international gateway.
+1. Non-default routes already present in the system main table are preserved. This keeps connected networks, Docker bridges, VPN routes, and administrator-defined static routes working.
+2. Traffic sourced from the local public address uses the dedicated local source table. This preserves symmetric replies for connections that entered through the public interface.
+3. All other host-generated IPv4 traffic consults the active irroute A/B table.
+4. Effective Iran destinations use the local gateway.
+5. All remaining destinations use the international gateway.
 
 `force-local` entries are added to the effective Iran destination set. `force-international` entries are subtracted from that set and receive explicit international routes. Overlapping entries in the two force lists are rejected.
 
@@ -17,13 +18,16 @@ The defaults are deliberately grouped in a high, application-specific range:
 
 | Resource | Default |
 | --- | ---: |
-| Public source rule priority | 51800 |
-| Main policy rule priority | 51810 |
+| Main non-default routes rule priority | 10000 |
+| Public source rule priority | 10010 |
+| Main policy rule priority | 10020 |
 | Local source table | 51810 |
 | A table | 51820 |
 | B table | 51821 |
 
-These values are stored in configuration. First activation stops if either managed rule priority is already occupied. Disable removes only these two rules and flushes only these three tables.
+All managed priorities precede Linux's standard main-table rule at priority 32766. The first rule looks up the main table with `suppress_prefixlength 0`, which ignores only its default route while retaining more-specific routes.
+
+These values are stored in configuration. First activation stops if any managed rule priority is already occupied. Disable removes only these three rules and flushes only these three tables. Configuration written by version 0.1.0 is migrated automatically to the safe priorities before activation.
 
 ## A/B activation
 

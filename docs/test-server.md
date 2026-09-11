@@ -113,7 +113,7 @@ sudo irroute status
 ip -4 rule show
 ```
 
-Disable removes only the two managed rules and flushes only the three reserved routing tables. It also disables boot persistence.
+Disable removes only the three managed rules and flushes only the three reserved routing tables. It also disables boot persistence.
 
 ## Recovery commands
 

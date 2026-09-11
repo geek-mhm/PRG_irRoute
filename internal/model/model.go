@@ -27,6 +27,7 @@ type RoutingConfig struct {
 	LocalTable         int          `json:"local_table"`
 	TableA             int          `json:"table_a"`
 	TableB             int          `json:"table_b"`
+	MainRoutesPriority int          `json:"main_routes_rule_priority"`
 	SourceRulePriority int          `json:"source_rule_priority"`
 	MainRulePriority   int          `json:"main_rule_priority"`
 	ForceLocal         []RouteEntry `json:"force_local,omitempty"`
@@ -78,12 +79,24 @@ func DefaultConfig() Config {
 			LocalTable:         51810,
 			TableA:             51820,
 			TableB:             51821,
-			SourceRulePriority: 51800,
-			MainRulePriority:   51810,
+			MainRoutesPriority: 10000,
+			SourceRulePriority: 10010,
+			MainRulePriority:   10020,
 		},
 		DNS:     DNSConfig{Mode: "system"},
 		Updates: UpdateConfig{Channel: "stable"},
 	}
+}
+
+func NormalizeConfig(cfg Config) Config {
+	if cfg.Routing.MainRoutesPriority == 0 && cfg.Routing.SourceRulePriority == 51800 && cfg.Routing.MainRulePriority == 51810 {
+		cfg.Routing.MainRoutesPriority = 10000
+		cfg.Routing.SourceRulePriority = 10010
+		cfg.Routing.MainRulePriority = 10020
+	} else if cfg.Routing.MainRoutesPriority == 0 && cfg.Routing.SourceRulePriority > 10 {
+		cfg.Routing.MainRoutesPriority = cfg.Routing.SourceRulePriority - 10
+	}
+	return cfg
 }
 
 func DefaultState() State {

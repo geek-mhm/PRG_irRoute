@@ -66,6 +66,16 @@ func TestApplyAlternatesTablesAndDisableRemovesState(t *testing.T) {
 	if len(runner.batches) != 4 {
 		t.Fatalf("loaded %d batches, want 4", len(runner.batches))
 	}
+	commands := strings.Join(runner.commands, "\n")
+	for _, expected := range []string{
+		"rule add priority 10000 from all table main suppress_prefixlength 0",
+		"rule add priority 10010 from 198.51.100.10/32 table 51810",
+		"rule add priority 10020 from all table 51820",
+	} {
+		if !strings.Contains(commands, expected) {
+			t.Errorf("managed rule command %q was not executed\n%s", expected, commands)
+		}
+	}
 	if !strings.Contains(runner.batches[0], "route add table 51820") || !strings.Contains(runner.batches[2], "route add table 51821") {
 		t.Fatalf("A/B route loads were not performed in order: %v", runner.batches)
 	}

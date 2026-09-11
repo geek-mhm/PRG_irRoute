@@ -38,8 +38,13 @@ func Validate(cfg model.Config) error {
 	if cfg.Routing.LocalTable == cfg.Routing.TableA || cfg.Routing.LocalTable == cfg.Routing.TableB || cfg.Routing.TableA == cfg.Routing.TableB {
 		problems = append(problems, "routing table IDs must be unique")
 	}
-	if cfg.Routing.SourceRulePriority <= 0 || cfg.Routing.MainRulePriority <= 0 || cfg.Routing.SourceRulePriority >= cfg.Routing.MainRulePriority {
-		problems = append(problems, "source rule priority must be positive and lower than the main rule priority")
+	if cfg.Routing.MainRoutesPriority <= 0 || cfg.Routing.SourceRulePriority <= 0 || cfg.Routing.MainRulePriority <= 0 {
+		problems = append(problems, "routing rule priorities must be positive")
+	} else if cfg.Routing.MainRoutesPriority >= cfg.Routing.SourceRulePriority || cfg.Routing.SourceRulePriority >= cfg.Routing.MainRulePriority {
+		problems = append(problems, "rule priorities must be ordered as main routes, public source, then main policy")
+	}
+	if cfg.Routing.MainRulePriority >= 32766 {
+		problems = append(problems, "managed rule priorities must precede the system main rule at priority 32766")
 	}
 	for _, entry := range append(append([]model.RouteEntry{}, cfg.Routing.ForceLocal...), cfg.Routing.ForceInternational...) {
 		if _, err := parseIPv4Prefix(entry.CIDR); err != nil {

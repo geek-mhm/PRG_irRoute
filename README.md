@@ -9,6 +9,7 @@ Phase one provides a safe, testable routing core and an English-only SSH interfa
 - The application owns only its configured rule priorities and route tables.
 - A new route generation is loaded into the inactive A/B table before the active rule is switched.
 - The public source address always has a higher-priority rule that returns traffic through the local public gateway. This protects services reached through the server's public IP.
+- Non-default routes from the system main table are preserved before irroute policy is evaluated, protecting Docker, LAN, VPN, and static routes.
 - Every apply, disable, data import, and configuration change creates a rollback snapshot.
 - Interactive activation schedules an independent systemd rollback. The operator must type `CONFIRM` within 90 seconds or the previous snapshot is restored after 120 seconds.
 - Existing rules at irroute priorities are treated as conflicts during first activation and are never silently overwritten.

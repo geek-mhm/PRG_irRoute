@@ -3,7 +3,7 @@ set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 project_dir=$(dirname "$script_dir")
-version=${VERSION:-0.1.0}
+version=${VERSION:-0.1.1}
 build_dir=$(mktemp -d)
 trap 'rm -rf "$build_dir"' EXIT HUP INT TERM
 

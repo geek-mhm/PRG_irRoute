@@ -33,6 +33,9 @@ func TestBuildUsesInactiveTableAndForceOverrides(t *testing.T) {
 			t.Errorf("batch does not contain %q\n%s", expected, batch)
 		}
 	}
+	if !strings.Contains(plan.Summary(), "Main routes rule: priority 10000") {
+		t.Fatalf("plan summary does not show the main-routes preservation rule")
+	}
 	localBatch := plan.LocalBatch()
 	if strings.Contains(localBatch, "route flush") || !strings.Contains(localBatch, "route replace table 51810") {
 		t.Fatalf("local table must be updated in place:\n%s", localBatch)

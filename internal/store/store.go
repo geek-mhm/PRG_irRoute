@@ -118,7 +118,7 @@ func (s *Store) LoadConfig() (model.Config, error) {
 	if err := readJSON(s.Paths.ConfigFile, &cfg); err != nil {
 		return cfg, err
 	}
-	return cfg, nil
+	return model.NormalizeConfig(cfg), nil
 }
 
 func (s *Store) SaveConfig(cfg model.Config) error {

@@ -1,6 +1,12 @@
 # Changelog
 
-## 0.1.0 - Unreleased
+## 0.1.1 - Unreleased
+
+- Fixed managed rule priorities so irroute policy runs before Linux's standard main-table rule.
+- Added a main-table non-default lookup to preserve Docker, LAN, VPN, and static routes.
+- Added automatic migration from the unsafe 0.1.0 priority defaults.
+
+## 0.1.0 - 2026-09-12
 
 - Added the phase-one policy-routing engine.
 - Added A/B route-table activation and a dedicated public-source route.

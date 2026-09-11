@@ -57,6 +57,9 @@ func (e *Engine) apply(reason string) (model.State, error) {
 	if err != nil {
 		return model.State{}, err
 	}
+	if err := e.Store.SaveConfig(cfg); err != nil {
+		return model.State{}, fmt.Errorf("persist normalized configuration: %w", err)
+	}
 	if err := e.preflightNetwork(cfg); err != nil {
 		return model.State{}, err
 	}
@@ -126,6 +129,7 @@ func (e *Engine) disable(reason string) (model.State, error) {
 		return model.State{}, fmt.Errorf("create safety snapshot: %w", err)
 	}
 	if previous.Enabled {
+		e.deletePriority(cfg.Routing.MainRoutesPriority)
 		e.deletePriority(cfg.Routing.SourceRulePriority)
 		e.deletePriority(cfg.Routing.MainRulePriority)
 	}
@@ -167,6 +171,7 @@ func (e *Engine) rollback(snapshotPath string) (model.State, error) {
 	if snapshot.SchemaVersion != model.SchemaVersion {
 		return model.State{}, fmt.Errorf("snapshot schema version %d is not supported", snapshot.SchemaVersion)
 	}
+	snapshot.Config = model.NormalizeConfig(snapshot.Config)
 	if err := config.Validate(snapshot.Config); err != nil {
 		return model.State{}, fmt.Errorf("snapshot configuration is invalid: %w", err)
 	}
@@ -277,7 +282,7 @@ func (e *Engine) Status() (model.State, []string, error) {
 		return state, nil, err
 	}
 	var rules []string
-	for _, priority := range []int{cfg.Routing.SourceRulePriority, cfg.Routing.MainRulePriority} {
+	for _, priority := range []int{cfg.Routing.MainRoutesPriority, cfg.Routing.SourceRulePriority, cfg.Routing.MainRulePriority} {
 		output, _ := e.Runner.Run("ip", "-4", "-o", "rule", "show", "priority", fmt.Sprint(priority))
 		if output != "" {
 			rules = append(rules, strings.Split(output, "\n")...)
@@ -348,7 +353,7 @@ func (e *Engine) preflightNetwork(cfg model.Config) error {
 }
 
 func (e *Engine) rejectResourceCollisions(cfg model.Config) error {
-	for _, priority := range []int{cfg.Routing.SourceRulePriority, cfg.Routing.MainRulePriority} {
+	for _, priority := range []int{cfg.Routing.MainRoutesPriority, cfg.Routing.SourceRulePriority, cfg.Routing.MainRulePriority} {
 		output, err := e.Runner.Run("ip", "-4", "-o", "rule", "show", "priority", fmt.Sprint(priority))
 		if err != nil {
 			return err
@@ -393,6 +398,7 @@ func (e *Engine) validateManagedRules(cfg model.Config, state model.State) error
 		priority int
 		parts    []string
 	}{
+		{cfg.Routing.MainRoutesPriority, []string{"from all", "lookup main", "suppress_prefixlength 0"}},
 		{cfg.Routing.SourceRulePriority, []string{strings.SplitN(cfg.Local.Address, "/", 2)[0], "lookup " + fmt.Sprint(cfg.Routing.LocalTable)}},
 		{cfg.Routing.MainRulePriority, []string{"from all", "lookup " + fmt.Sprint(state.ActiveTable)}},
 	}
@@ -414,7 +420,16 @@ func (e *Engine) validateManagedRules(cfg model.Config, state model.State) error
 }
 
 func (e *Engine) switchRules(plan routing.Plan) error {
-	output, err := e.ruleAtPriority(plan.SourceRulePriority)
+	output, err := e.ruleAtPriority(plan.MainRoutesPriority)
+	if err != nil {
+		return err
+	}
+	if output == "" {
+		if _, err := e.Runner.Run("ip", "-4", "rule", "add", "priority", fmt.Sprint(plan.MainRoutesPriority), "from", "all", "table", "main", "suppress_prefixlength", "0"); err != nil {
+			return err
+		}
+	}
+	output, err = e.ruleAtPriority(plan.SourceRulePriority)
 	if err != nil {
 		return err
 	}
@@ -439,12 +454,14 @@ func (e *Engine) ruleAtPriority(priority int) (string, error) {
 }
 
 func (e *Engine) restoreRules(cfg model.Config, state model.State) {
+	e.deletePriority(cfg.Routing.MainRoutesPriority)
 	e.deletePriority(cfg.Routing.SourceRulePriority)
 	e.deletePriority(cfg.Routing.MainRulePriority)
 	if !state.Enabled || state.ActiveTable == 0 {
 		return
 	}
 	localAddress := strings.SplitN(cfg.Local.Address, "/", 2)[0]
+	e.Runner.Run("ip", "-4", "rule", "add", "priority", fmt.Sprint(cfg.Routing.MainRoutesPriority), "from", "all", "table", "main", "suppress_prefixlength", "0")
 	e.Runner.Run("ip", "-4", "rule", "add", "priority", fmt.Sprint(cfg.Routing.SourceRulePriority), "from", localAddress+"/32", "table", fmt.Sprint(cfg.Routing.LocalTable))
 	e.Runner.Run("ip", "-4", "rule", "add", "priority", fmt.Sprint(cfg.Routing.MainRulePriority), "from", "all", "table", fmt.Sprint(state.ActiveTable))
 }

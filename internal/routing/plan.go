@@ -22,6 +22,7 @@ type Plan struct {
 	ActiveTable        int
 	TargetTable        int
 	LocalTable         int
+	MainRoutesPriority int
 	SourceRulePriority int
 	MainRulePriority   int
 	PublicSource       netip.Addr
@@ -64,6 +65,7 @@ func Build(cfg model.Config, iranCIDRs []string, currentActiveTable int) (Plan, 
 		ActiveTable:        currentActiveTable,
 		TargetTable:        targetTable,
 		LocalTable:         cfg.Routing.LocalTable,
+		MainRoutesPriority: cfg.Routing.MainRoutesPriority,
 		SourceRulePriority: cfg.Routing.SourceRulePriority,
 		MainRulePriority:   cfg.Routing.MainRulePriority,
 		PublicSource:       localAddress.Addr(),
@@ -126,6 +128,7 @@ func (p Plan) Summary() string {
 	fmt.Fprintf(&builder, "Effective local prefixes: %d\n", len(p.EffectiveLocal))
 	fmt.Fprintf(&builder, "Force-international prefixes: %d\n", len(p.ForceInternational))
 	fmt.Fprintf(&builder, "Target table routes: %d\n", len(p.TargetRoutes))
+	fmt.Fprintf(&builder, "Main routes rule: priority %d lookup main suppress-prefix-length 0\n", p.MainRoutesPriority)
 	fmt.Fprintf(&builder, "Source rule: priority %d from %s/32 lookup %d\n", p.SourceRulePriority, p.PublicSource, p.LocalTable)
 	fmt.Fprintf(&builder, "Main rule: priority %d lookup %d\n", p.MainRulePriority, p.TargetTable)
 	return builder.String()
