@@ -11,8 +11,33 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+if ! command -v apt-get >/dev/null 2>&1; then
+    echo "Error: phase-one source installation requires Ubuntu with apt-get." >&2
+    exit 1
+fi
+
+set --
 if ! command -v go >/dev/null 2>&1; then
-    echo "Error: Go 1.18 or newer is required for a source installation." >&2
+    set -- "$@" golang-go
+fi
+if ! command -v ip >/dev/null 2>&1; then
+    set -- "$@" iproute2
+fi
+if ! command -v systemctl >/dev/null 2>&1; then
+    set -- "$@" systemd
+fi
+
+if [ "$#" -gt 0 ]; then
+    echo "Installing required packages: $*"
+    apt-get update
+    apt-get install -y "$@"
+fi
+
+go_version=$(go version | awk '{print $3}' | sed 's/^go//')
+go_major=$(printf '%s' "$go_version" | cut -d. -f1)
+go_minor=$(printf '%s' "$go_version" | cut -d. -f2)
+if [ "$go_major" -lt 1 ] || { [ "$go_major" -eq 1 ] && [ "$go_minor" -lt 18 ]; }; then
+    echo "Error: Go 1.18 or newer is required; found Go $go_version." >&2
     exit 1
 fi
 

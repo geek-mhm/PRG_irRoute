@@ -16,7 +16,7 @@ Phase one provides a safe, testable routing core and an English-only SSH interfa
 
 ## Requirements
 
-- Ubuntu or another systemd-based Linux distribution
+- Ubuntu 22.04 or 24.04
 - Two already-configured IPv4 interfaces
 - `iproute2`
 - Root privileges for route changes
@@ -24,13 +24,17 @@ Phase one provides a safe, testable routing core and an English-only SSH interfa
 
 Phase one manages host-generated IPv4 traffic only. Forwarded client traffic, IPv6, automated gateway health failover, application updates, and split DNS policy are planned for later phases.
 
-## Install from source
+## Install from source on Ubuntu
 
 ```sh
+sudo apt-get update
+sudo apt-get install -y git
+git clone https://github.com/geek-mhm/PRG_irRoute.git
+cd PRG_irRoute
 sudo ./scripts/install.sh
 ```
 
-The installer builds `/usr/local/sbin/irroute`, installs the systemd unit, and creates protected configuration and state directories. It does not change routes or enable the service.
+The installer installs missing build dependencies through `apt-get`, runs the test suite, builds `/usr/local/sbin/irroute`, installs the systemd unit, and creates protected configuration and state directories. It does not change routes or enable the service.
 
 ## First setup
 
@@ -129,3 +133,5 @@ IRROUTE_ROOT=/tmp/irroute-test ./bin/irroute setup
 ```
 
 See [docs/architecture.md](docs/architecture.md) for routing behavior and [docs/roadmap.md](docs/roadmap.md) for the planned update, DNS, and health-management phases.
+
+For a complete clean-server test procedure, see [docs/test-server.md](docs/test-server.md).
