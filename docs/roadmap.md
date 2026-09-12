@@ -15,7 +15,7 @@
 
 ## Phase two: controlled updates and DNS
 
-- Signed release manifest and binary packages for supported Ubuntu versions
+- Signed release manifest and binary packages for supported Linux distributions
 - Stable and testing update channels
 - Separate application and Iran-data versions
 - Download verification, staged installation, and rollback

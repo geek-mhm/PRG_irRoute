@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3 - 2026-09-12
+
+- Added source-install support for AlmaLinux and other dnf-based systems.
+- Added persistent loose reverse-path filtering for dual-interface routing.
+- Added the reverse-path filtering configuration to offline release bundles.
+- Expanded installation, setup, validation, update, and WHM documentation.
+
 ## 0.1.2 - 2026-09-12
 
 - Added managed DNS profiles using `systemd-resolved`.

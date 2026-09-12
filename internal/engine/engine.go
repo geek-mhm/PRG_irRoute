@@ -246,6 +246,8 @@ func (e *Engine) Doctor() []Check {
 		checks = append(checks, Check{Name: "Iran CIDR data", OK: true, Message: fmt.Sprintf("%d prefixes loaded", len(cidrs))})
 	}
 	if e.Runner.IsLinux() && e.Runner.LookPath("ip") == nil {
+		err := e.reversePathFilteringError()
+		checks = append(checks, Check{Name: "reverse-path filtering", OK: err == nil, Message: checkMessage(err, "loose mode is active")})
 		state, stateErr := e.Store.LoadState()
 		if stateErr != nil {
 			checks = append(checks, Check{Name: "managed routing state", Message: stateErr.Error()})
@@ -351,6 +353,9 @@ func (e *Engine) requireHostAccess() error {
 }
 
 func (e *Engine) preflightNetwork(cfg model.Config) error {
+	if err := e.reversePathFilteringError(); err != nil {
+		return err
+	}
 	links := []struct {
 		name string
 		link model.Link
@@ -380,6 +385,20 @@ func (e *Engine) preflightNetwork(cfg model.Config) error {
 		if _, err := e.Runner.Run("resolvectl", "status"); err != nil {
 			return fmt.Errorf("managed DNS requires a running systemd-resolved service: %w", err)
 		}
+	}
+	return nil
+}
+
+func (e *Engine) reversePathFilteringError() error {
+	if err := e.Runner.LookPath("sysctl"); err != nil {
+		return errors.New("sysctl is required to verify reverse-path filtering")
+	}
+	value, err := e.Runner.Run("sysctl", "-n", "net.ipv4.conf.all.rp_filter")
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(value) != "2" {
+		return fmt.Errorf("net.ipv4.conf.all.rp_filter must be 2 (loose mode), found %q", strings.TrimSpace(value))
 	}
 	return nil
 }

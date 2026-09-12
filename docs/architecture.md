@@ -65,4 +65,6 @@ CIDR subtraction is performed in memory to make broad `force-international` entr
 
 The systemd service runs `irroute apply --boot` after `network-online.target`. It is enabled only after a confirmed manual activation and disabled by `irroute disable`.
 
+Installers place `/etc/sysctl.d/90-irroute.conf` on the host and set reverse-path filtering to loose mode. Strict reverse-path filtering can reject valid return traffic on a host whose incoming public interface differs from the policy-selected default egress interface.
+
 Mutating engine operations take a non-blocking process lock in `/run/irroute`. A concurrent apply, disable, or rollback is rejected instead of racing another route generation.

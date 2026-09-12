@@ -3,7 +3,7 @@ set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 project_dir=$(dirname "$script_dir")
-version=${VERSION:-0.1.2}
+version=${VERSION:-0.1.3}
 build_dir=$(mktemp -d)
 trap 'rm -rf "$build_dir"' EXIT HUP INT TERM
 
@@ -33,6 +33,7 @@ for architecture in amd64 arm64; do
     cp data/iran-ipv4.cidr "$package_dir/iran-ipv4.cidr"
     cp data/README.md "$package_dir/DATA-SOURCE.md"
     cp packaging/irroute.service "$package_dir/irroute.service"
+    cp packaging/90-irroute.conf "$package_dir/90-irroute.conf"
     cp packaging/install-offline.sh "$package_dir/install.sh"
     cp LICENSE "$package_dir/LICENSE"
     chmod 0755 "$package_dir/install.sh" "$package_dir/irroute"

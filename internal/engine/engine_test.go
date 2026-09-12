@@ -32,6 +32,9 @@ func (runner *fakeRunner) Run(name string, args ...string) (string, error) {
 	if strings.Contains(command, "rule del priority") {
 		return "", errors.New("rule not found")
 	}
+	if strings.Contains(command, "sysctl -n net.ipv4.conf.all.rp_filter") {
+		return "2", nil
+	}
 	return "", nil
 }
 

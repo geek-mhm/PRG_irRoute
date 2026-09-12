@@ -11,7 +11,7 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-for command_name in install ip systemctl; do
+for command_name in install ip systemctl sysctl; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
         echo "Error: required command '$command_name' is not available." >&2
         exit 1
@@ -22,7 +22,10 @@ script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 install -D -m 0755 "$script_dir/irroute" /usr/local/sbin/irroute
 install -D -m 0644 "$script_dir/irroute.service" /etc/systemd/system/irroute.service
+install -D -m 0644 "$script_dir/90-irroute.conf" /etc/sysctl.d/90-irroute.conf
 install -d -m 0700 /etc/irroute /var/lib/irroute/data /var/lib/irroute/backups /run/irroute
+
+sysctl -p /etc/sysctl.d/90-irroute.conf >/dev/null
 
 if [ ! -f /var/lib/irroute/data/iran-current.cidr ]; then
     /usr/local/sbin/irroute data import "$script_dir/iran-ipv4.cidr"

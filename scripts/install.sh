@@ -11,26 +11,49 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-if ! command -v apt-get >/dev/null 2>&1; then
-    echo "Error: phase-one source installation requires Ubuntu with apt-get." >&2
+if command -v apt-get >/dev/null 2>&1; then
+    package_manager=apt
+elif command -v dnf >/dev/null 2>&1; then
+    package_manager=dnf
+else
+    echo "Error: source installation requires apt-get or dnf." >&2
     exit 1
 fi
 
 set --
 if ! command -v go >/dev/null 2>&1; then
-    set -- "$@" golang-go
+    if [ "$package_manager" = apt ]; then
+        set -- "$@" golang-go
+    else
+        set -- "$@" golang
+    fi
 fi
 if ! command -v ip >/dev/null 2>&1; then
-    set -- "$@" iproute2
+    if [ "$package_manager" = apt ]; then
+        set -- "$@" iproute2
+    else
+        set -- "$@" iproute
+    fi
 fi
 if ! command -v systemctl >/dev/null 2>&1; then
     set -- "$@" systemd
 fi
+if ! command -v sysctl >/dev/null 2>&1; then
+    if [ "$package_manager" = apt ]; then
+        set -- "$@" procps
+    else
+        set -- "$@" procps-ng
+    fi
+fi
 
 if [ "$#" -gt 0 ]; then
     echo "Installing required packages: $*"
-    apt-get update
-    apt-get install -y "$@"
+    if [ "$package_manager" = apt ]; then
+        apt-get update
+        apt-get install -y "$@"
+    else
+        dnf install -y "$@"
+    fi
 fi
 
 go_version=$(go version | awk '{print $3}' | sed 's/^go//')
@@ -48,11 +71,16 @@ trap 'rm -rf "$build_dir"' EXIT HUP INT TERM
 
 cd "$project_dir"
 go test ./...
-go build -trimpath -ldflags "-s -w -X main.version=0.1.2" -o "$build_dir/irroute" ./cmd/irroute
+go build -trimpath -ldflags "-s -w -X main.version=0.1.3" -o "$build_dir/irroute" ./cmd/irroute
 
 install -D -m 0755 "$build_dir/irroute" /usr/local/sbin/irroute
 install -D -m 0644 packaging/irroute.service /etc/systemd/system/irroute.service
+install -D -m 0644 packaging/90-irroute.conf /etc/sysctl.d/90-irroute.conf
 install -d -m 0700 /etc/irroute /var/lib/irroute/data /var/lib/irroute/backups /run/irroute
+
+if command -v sysctl >/dev/null 2>&1; then
+    sysctl -p /etc/sysctl.d/90-irroute.conf >/dev/null
+fi
 
 if [ ! -f /var/lib/irroute/data/iran-current.cidr ]; then
     /usr/local/sbin/irroute data import "$project_dir/data/iran-ipv4.cidr"
@@ -63,5 +91,5 @@ fi
 
 systemctl daemon-reload
 
-echo "irroute 0.1.2 was installed successfully."
+echo "irroute 0.1.3 was installed successfully."
 echo "No routing changes were made. Run: sudo irroute setup"

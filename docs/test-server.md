@@ -1,8 +1,8 @@
-# Clean Ubuntu Test Procedure
+# Clean Linux Server Test Procedure
 
-This procedure is intended for a disposable Ubuntu 22.04 or 24.04 server with two already-configured IPv4 interfaces. Keep provider console access available during the first routing test.
+This procedure is intended for a disposable Ubuntu 22.04/24.04 or AlmaLinux 8/9 server with two already-configured IPv4 interfaces. Keep provider console access available during the first routing test.
 
-If the server cannot reach GitHub or Ubuntu mirrors, follow [offline-install.md](offline-install.md) instead of the source installation steps below.
+If the server cannot reach GitHub or its package repositories, follow [offline-install.md](offline-install.md) instead of the source installation steps below.
 
 ## 1. Inspect the server before installation
 
@@ -52,7 +52,7 @@ Custom files must contain one IPv4 address or CIDR per line. Blank lines and com
 sudo irroute setup
 ```
 
-Select the public Iran interface as `local`. Select the unfiltered path as `international`. Enter each interface address in CIDR notation and its directly reachable gateway. Select managed DNS to send resolver traffic through the international interface. Press Enter to accept the default DNS servers. Press Enter at the data-source prompt to use the bundled seed, or enter `/root/iran-ipv4.cidr` if you copied a custom file.
+Select the public Iran interface as `local`. Select the unfiltered path as `international`. Enter each interface address in CIDR notation and its directly reachable gateway. Select managed DNS when `systemd-resolved` is active. Select system DNS on WHM/cPanel servers where another service owns resolver configuration. Press Enter at the data-source prompt to use the bundled seed, or enter `/root/iran-ipv4.cidr` if you copied a custom file.
 
 ## 5. Validate the generated policy
 
