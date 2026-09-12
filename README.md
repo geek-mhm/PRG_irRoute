@@ -87,7 +87,7 @@ For a reproducible source build, check out a release tag before installing:
 
 ```sh
 git fetch --tags
-git checkout v0.1.3
+git checkout v0.1.4
 sudo ./scripts/install.sh
 ```
 
@@ -96,15 +96,15 @@ sudo ./scripts/install.sh
 This method avoids installing a compiler. Use `amd64` for `x86_64` servers and `arm64` for `aarch64` servers.
 
 ```sh
-mkdir -p /root/irroute-release-v0.1.3
-cd /root/irroute-release-v0.1.3
+mkdir -p /root/irroute-release-v0.1.4
+cd /root/irroute-release-v0.1.4
 
-curl -fLO https://github.com/geek-mhm/PRG_irRoute/releases/download/v0.1.3/irroute-0.1.3-linux-amd64.tar.gz
-curl -fLO https://github.com/geek-mhm/PRG_irRoute/releases/download/v0.1.3/SHA256SUMS
+curl -fLO https://github.com/geek-mhm/PRG_irRoute/releases/download/v0.1.4/irroute-0.1.4-linux-amd64.tar.gz
+curl -fLO https://github.com/geek-mhm/PRG_irRoute/releases/download/v0.1.4/SHA256SUMS
 
 sha256sum -c SHA256SUMS --ignore-missing
-tar -xzf irroute-0.1.3-linux-amd64.tar.gz
-cd irroute-0.1.3-linux-amd64
+tar -xzf irroute-0.1.4-linux-amd64.tar.gz
+cd irroute-0.1.4-linux-amd64
 sudo ./install.sh
 ```
 
@@ -115,7 +115,7 @@ Never install a release archive when checksum validation fails.
 Download the release bundle and `SHA256SUMS` on a connected computer. Transfer both files through the existing management path:
 
 ```sh
-scp -P SSH_PORT irroute-0.1.3-linux-amd64.tar.gz root@SERVER_IP:/root/
+scp -P SSH_PORT irroute-0.1.4-linux-amd64.tar.gz root@SERVER_IP:/root/
 scp -P SSH_PORT SHA256SUMS root@SERVER_IP:/root/
 ```
 
@@ -124,8 +124,8 @@ On the target server:
 ```sh
 cd /root
 sha256sum -c SHA256SUMS --ignore-missing
-tar -xzf irroute-0.1.3-linux-amd64.tar.gz
-cd irroute-0.1.3-linux-amd64
+tar -xzf irroute-0.1.4-linux-amd64.tar.gz
+cd irroute-0.1.4-linux-amd64
 ./install.sh
 ```
 
@@ -330,7 +330,7 @@ Update a source installation:
 ```sh
 cd /path/to/PRG_irRoute
 git fetch --tags
-git checkout v0.1.3
+git checkout v0.1.4
 sudo ./scripts/install.sh
 sudo irroute doctor
 ```

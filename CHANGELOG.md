@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4 - 2026-09-12
+
+- Made source builds work on WHM/cPanel hosts where `/tmp` is mounted with `noexec`.
+
 ## 0.1.3 - 2026-09-12
 
 - Added source-install support for AlmaLinux and other dnf-based systems.

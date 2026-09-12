@@ -9,8 +9,8 @@ Download a prebuilt bundle and its checksum from the matching GitHub release, or
 Example release download for an `x86_64` server:
 
 ```sh
-curl -LO https://github.com/geek-mhm/PRG_irRoute/releases/download/v0.1.3/irroute-0.1.3-linux-amd64.tar.gz
-curl -LO https://github.com/geek-mhm/PRG_irRoute/releases/download/v0.1.3/SHA256SUMS
+curl -LO https://github.com/geek-mhm/PRG_irRoute/releases/download/v0.1.4/irroute-0.1.4-linux-amd64.tar.gz
+curl -LO https://github.com/geek-mhm/PRG_irRoute/releases/download/v0.1.4/SHA256SUMS
 ```
 
 To build locally instead:
@@ -18,13 +18,13 @@ To build locally instead:
 From the project repository:
 
 ```sh
-make offline-bundles VERSION=0.1.3
+make offline-bundles VERSION=0.1.4
 ```
 
 This creates:
 
-- `dist/irroute-0.1.3-linux-amd64.tar.gz` for `x86_64` servers;
-- `dist/irroute-0.1.3-linux-arm64.tar.gz` for `aarch64` or `arm64` servers;
+- `dist/irroute-0.1.4-linux-amd64.tar.gz` for `x86_64` servers;
+- `dist/irroute-0.1.4-linux-arm64.tar.gz` for `aarch64` or `arm64` servers;
 - `dist/SHA256SUMS` for transfer verification.
 
 No Go compiler or Git client is needed on the target server in either case.
@@ -44,7 +44,7 @@ Use the `amd64` bundle for `x86_64`. Use the `arm64` bundle for `aarch64` or `ar
 Run from the connected computer and replace the example values:
 
 ```sh
-scp dist/irroute-0.1.3-linux-amd64.tar.gz root@SERVER_IP:/root/
+scp dist/irroute-0.1.4-linux-amd64.tar.gz root@SERVER_IP:/root/
 scp dist/SHA256SUMS root@SERVER_IP:/root/
 ```
 
@@ -55,8 +55,8 @@ SCP transfers over the existing SSH connection and does not require the target s
 ```sh
 cd /root
 sha256sum -c SHA256SUMS --ignore-missing
-tar -xzf irroute-0.1.3-linux-amd64.tar.gz
-cd irroute-0.1.3-linux-amd64
+tar -xzf irroute-0.1.4-linux-amd64.tar.gz
+cd irroute-0.1.4-linux-amd64
 ./install.sh
 ```
 

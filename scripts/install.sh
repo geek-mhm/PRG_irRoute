@@ -66,12 +66,16 @@ fi
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 project_dir=$(dirname "$script_dir")
-build_dir=$(mktemp -d)
+build_dir=$(mktemp -d "$project_dir/.irroute-build.XXXXXX")
 trap 'rm -rf "$build_dir"' EXIT HUP INT TERM
+mkdir -p "$build_dir/go-cache" "$build_dir/go-tmp"
+GOCACHE="$build_dir/go-cache"
+GOTMPDIR="$build_dir/go-tmp"
+export GOCACHE GOTMPDIR
 
 cd "$project_dir"
 go test ./...
-go build -trimpath -ldflags "-s -w -X main.version=0.1.3" -o "$build_dir/irroute" ./cmd/irroute
+go build -trimpath -ldflags "-s -w -X main.version=0.1.4" -o "$build_dir/irroute" ./cmd/irroute
 
 install -D -m 0755 "$build_dir/irroute" /usr/local/sbin/irroute
 install -D -m 0644 packaging/irroute.service /etc/systemd/system/irroute.service
@@ -91,5 +95,5 @@ fi
 
 systemctl daemon-reload
 
-echo "irroute 0.1.3 was installed successfully."
+echo "irroute 0.1.4 was installed successfully."
 echo "No routing changes were made. Run: sudo irroute setup"
